@@ -143,7 +143,7 @@ class FilterableCollection extends HTMLElement {
     this.abortController?.abort();
     this.abortController = new AbortController();
     this.classList.add('is-loading');
-    this.setStatus('Loading products');
+    this.setStatus(this.loadingText);
 
     try {
       const requestUrl = url ? this.withSectionId(url) : this.buildFetchUrl();
@@ -171,11 +171,11 @@ class FilterableCollection extends HTMLElement {
         window.history.pushState({}, '', nextUrl.toString());
       }
 
-      this.setStatus('Products updated');
+      this.setStatus(this.updatedText);
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error(error);
-        this.setStatus('Unable to update products. Please try again.');
+        this.setStatus(this.errorText);
       }
     } finally {
       this.classList.remove('is-loading');
@@ -184,6 +184,18 @@ class FilterableCollection extends HTMLElement {
 
   setStatus(message) {
     if (this.status) this.status.textContent = message;
+  }
+
+  get loadingText() {
+    return this.dataset.loadingText || 'Loading products';
+  }
+
+  get updatedText() {
+    return this.dataset.updatedText || 'Products updated';
+  }
+
+  get errorText() {
+    return this.dataset.errorText || 'Unable to update products. Please try again.';
   }
 
   withSectionId(url) {

@@ -10,8 +10,24 @@
   data-cart-url="{{ routes.cart_url }}"
   data-cart-change-url="{{ routes.cart_change_url }}"
   data-cart-update-url="{{ routes.cart_update_url }}"
+  data-item-singular="{{ settings.custom_cart_drawer_item_singular | escape }}"
+  data-item-plural="{{ settings.custom_cart_drawer_item_plural | escape }}"
+  data-remove-label="{{ settings.custom_cart_drawer_remove_label | escape }}"
+  data-decrease-label="{{ settings.custom_cart_drawer_decrease_label | escape }}"
+  data-increase-label="{{ settings.custom_cart_drawer_increase_label | escape }}"
+  data-quantity-label="{{ settings.custom_cart_drawer_quantity_label | escape }}"
+  data-loading-text="{{ settings.custom_cart_drawer_loading_text | escape }}"
+  data-update-text="{{ settings.custom_cart_drawer_update_text | escape }}"
+  data-remove-text="{{ settings.custom_cart_drawer_remove_text | escape }}"
+  data-updated-text="{{ settings.custom_cart_drawer_updated_text | escape }}"
+  data-removed-text="{{ settings.custom_cart_drawer_removed_text | escape }}"
 >
-  <div class="custom-cart-drawer__overlay" data-custom-cart-close></div>
+  <button
+    class="custom-cart-drawer__overlay"
+    type="button"
+    data-custom-cart-close
+    aria-label="{{ 'accessibility.close' | t }}"
+  ></button>
 
   <aside
     id="CustomCartDrawer"
@@ -23,9 +39,16 @@
   >
     <header class="custom-cart-drawer__header">
       <div>
-        <h2 id="CustomCartDrawerTitle" class="custom-cart-drawer__title">{{ 'sections.cart.title' | t }}</h2>
+        <h2 id="CustomCartDrawerTitle" class="custom-cart-drawer__title">
+          {{ settings.custom_cart_drawer_heading | escape }}
+        </h2>
         <p class="custom-cart-drawer__count" data-custom-cart-count>
-          {{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %}
+          {{ cart.item_count }}
+          {% if cart.item_count == 1 %}
+            {{ settings.custom_cart_drawer_item_singular | escape }}
+          {% else %}
+            {{ settings.custom_cart_drawer_item_plural | escape }}
+          {% endif %}
         </p>
       </div>
       <button class="custom-cart-drawer__close" type="button" data-custom-cart-close aria-label="{{ 'accessibility.close' | t }}">
@@ -57,7 +80,11 @@
       </small>
 
       <div class="custom-cart-drawer__ctas">
-        <a class="button button--secondary" href="{{ routes.cart_url }}">View cart</a>
+        {%- if settings.custom_cart_drawer_show_view_cart -%}
+          <a class="button button--secondary" href="{{ routes.cart_url }}">
+            {{ settings.custom_cart_drawer_view_cart_label | escape }}
+          </a>
+        {%- endif -%}
         <form action="{{ routes.cart_url }}" method="post">
           <button class="button" name="checkout" type="submit" data-custom-cart-checkout {% if cart == empty %}disabled{% endif %}>
             {{ 'sections.cart.checkout' | t }}

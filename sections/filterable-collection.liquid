@@ -21,12 +21,20 @@
 {%- endif -%}
 
 {%- style -%}
+  .section-{{ section.id }}-spacing {
+    margin-top: {{ section.settings.margin_top | times: 0.75 | round: 0 }}px;
+  }
+
   .section-{{ section.id }}-padding {
     padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
     padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
   }
 
   @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-spacing {
+      margin-top: {{ section.settings.margin_top }}px;
+    }
+
     .section-{{ section.id }}-padding {
       padding-top: {{ section.settings.padding_top }}px;
       padding-bottom: {{ section.settings.padding_bottom }}px;
@@ -61,31 +69,48 @@
 -%}
 
 <filterable-collection
-  class="filterable-collection section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}"
+  class="filterable-collection section-{{ section.id }}-spacing gradient color-{{ section.settings.color_scheme }}"
   data-section-id="{{ section.id }}"
   data-collection-url="{{ target_collection.url }}"
   data-section-url="{{ section_url }}"
   data-share-url="{{ section_url }}"
   data-filter-source="native"
   data-collection-template="{{ is_collection_template }}"
+  data-loading-text="{{ section.settings.loading_text | escape }}"
+  data-updated-text="{{ section.settings.updated_text | escape }}"
+  data-error-text="{{ section.settings.error_text | escape }}"
 >
   {%- paginate target_collection.products by section.settings.products_per_page -%}
-    <div class="page-width">
-      <form class="filterable-collection__controls" data-filterable-form>
+    <div class="page-width section-{{ section.id }}-padding">
+      <form
+        class="filterable-collection__controls"
+        aria-labelledby="FilterableCollectionHeading-{{ section.id }}"
+        data-filterable-form
+      >
         <div class="filterable-collection__header">
           <div>
-            <h2 class="filterable-collection__heading {{ section.settings.heading_size }}">
+            <h2
+              id="FilterableCollectionHeading-{{ section.id }}"
+              class="filterable-collection__heading {{ section.settings.heading_size }}"
+            >
               {{ section.settings.heading | default: target_collection.title | escape }}
             </h2>
             <p class="filterable-collection__summary caption-large" data-filterable-count>
-              {{ target_collection.products_count }} products
+              {{ target_collection.products_count }}
+              {% if target_collection.products_count == 1 %}
+                {{ section.settings.product_count_singular | escape }}
+              {% else %}
+                {{ section.settings.product_count_plural | escape }}
+              {% endif %}
             </p>
           </div>
-          <button type="button" class="link underlined-link" data-filterable-clear>Clear filters</button>
+          <button type="button" class="link underlined-link" data-filterable-clear>
+            {{ section.settings.clear_filters_label | escape }}
+          </button>
         </div>
 
         {%- if section.settings.show_filters and native_filter_count > 0 -%}
-          <div class="filterable-collection__groups">
+          <div class="filterable-collection__groups" aria-label="{{ section.settings.filter_group_label | escape }}">
             {%- for filter in target_collection.filters -%}
               {%- if filter.type == 'list' or filter.type == 'boolean' -%}
                 <fieldset class="filterable-collection__fieldset">
@@ -119,16 +144,23 @@
             {%- endfor -%}
           </div>
         {%- elsif section.settings.show_filters and is_collection_template == false and target_collection.url != blank -%}
-          <div class="filterable-collection__groups" data-filterable-groups></div>
+          <div
+            class="filterable-collection__groups"
+            aria-label="{{ section.settings.filter_group_label | escape }}"
+            aria-live="polite"
+            data-filterable-groups
+          ></div>
         {%- elsif section.settings.show_filters -%}
           <p class="filterable-collection__status caption-large">
-            Add product values and enable filters in Shopify Search & Discovery to show dynamic filters here.
+            {{ section.settings.no_filters_message | escape }}
           </p>
         {%- endif -%}
 
         {%- if section.settings.enable_sorting -%}
           <div class="filterable-collection__sort">
-            <label class="filterable-collection__sort-label" for="FilterableSort-{{ section.id }}">Sort by</label>
+            <label class="filterable-collection__sort-label" for="FilterableSort-{{ section.id }}">
+              {{ section.settings.sort_label | escape }}
+            </label>
             <div class="select">
               <select
                 id="FilterableSort-{{ section.id }}"
@@ -136,10 +168,18 @@
                 name="sort_by"
                 data-default-sort="{{ target_collection.default_sort_by }}"
               >
-                <option value="manual" {% if sort_by == 'manual' %}selected{% endif %}>Featured</option>
-                <option value="price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price, low to high</option>
-                <option value="price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price, high to low</option>
-                <option value="created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
+                <option value="manual" {% if sort_by == 'manual' %}selected{% endif %}>
+                  {{ section.settings.sort_featured_label | escape }}
+                </option>
+                <option value="price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>
+                  {{ section.settings.sort_price_ascending_label | escape }}
+                </option>
+                <option value="price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>
+                  {{ section.settings.sort_price_descending_label | escape }}
+                </option>
+                <option value="created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>
+                  {{ section.settings.sort_newest_label | escape }}
+                </option>
               </select>
               <span class="svg-wrapper">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
             </div>
@@ -155,8 +195,13 @@
         <div class="active-filters" data-active-filters>
           {%- for filter in target_collection.filters -%}
             {%- for value in filter.active_values -%}
-              <a class="active-filter" href="{{ value.url_to_remove }}" data-filter-link>
-                {{ value.label | escape }} x
+              <a
+                class="active-filter"
+                href="{{ value.url_to_remove }}"
+                aria-label="{{ section.settings.remove_filter_label | escape }}: {{ value.label | escape }}"
+                data-filter-link
+              >
+                {{ value.label | escape }} <span aria-hidden="true">x</span>
               </a>
             {%- endfor -%}
           {%- endfor -%}
@@ -169,8 +214,12 @@
               {%- endif -%}
             {%- endfor -%}
             {%- if has_active_filter -%}
-              <a class="active-filter clear-all" href="{{ section_url }}{% if sort_by != blank %}?sort_by={{ sort_by }}{% endif %}" data-filter-link>
-                Clear all
+              <a
+                class="active-filter clear-all"
+                href="{{ section_url }}{% if sort_by != blank %}?sort_by={{ sort_by }}{% endif %}"
+                data-filter-link
+              >
+                {{ section.settings.clear_all_label | escape }}
               </a>
             {%- endif -%}
           {%- endif -%}
@@ -184,8 +233,8 @@
 
         {%- if target_collection.products.size == 0 -%}
           <div class="filterable-collection__empty">
-            <h3 class="h2">No products found</h3>
-            <p>Try removing a filter or choosing a different sort option.</p>
+            <h3 class="h2">{{ section.settings.empty_heading | escape }}</h3>
+            <p>{{ section.settings.empty_text | escape }}</p>
           </div>
         {%- else -%}
           <ul
@@ -286,6 +335,112 @@
       "id": "enable_sorting",
       "default": true,
       "label": "Enable sorting"
+    },
+    {
+      "type": "header",
+      "content": "Labels"
+    },
+    {
+      "type": "text",
+      "id": "product_count_singular",
+      "label": "Product count singular label",
+      "default": "product"
+    },
+    {
+      "type": "text",
+      "id": "product_count_plural",
+      "label": "Product count plural label",
+      "default": "products"
+    },
+    {
+      "type": "text",
+      "id": "filter_group_label",
+      "label": "Filter group accessible label",
+      "default": "Product filters"
+    },
+    {
+      "type": "text",
+      "id": "clear_filters_label",
+      "label": "Clear filters label",
+      "default": "Clear filters"
+    },
+    {
+      "type": "text",
+      "id": "clear_all_label",
+      "label": "Clear active filters label",
+      "default": "Clear all"
+    },
+    {
+      "type": "text",
+      "id": "remove_filter_label",
+      "label": "Remove filter accessible label",
+      "default": "Remove filter"
+    },
+    {
+      "type": "text",
+      "id": "no_filters_message",
+      "label": "No filters message",
+      "default": "Add product values and enable filters in Shopify Search & Discovery to show dynamic filters here."
+    },
+    {
+      "type": "text",
+      "id": "sort_label",
+      "label": "Sort label",
+      "default": "Sort by"
+    },
+    {
+      "type": "text",
+      "id": "sort_featured_label",
+      "label": "Featured sort label",
+      "default": "Featured"
+    },
+    {
+      "type": "text",
+      "id": "sort_price_ascending_label",
+      "label": "Price ascending sort label",
+      "default": "Price, low to high"
+    },
+    {
+      "type": "text",
+      "id": "sort_price_descending_label",
+      "label": "Price descending sort label",
+      "default": "Price, high to low"
+    },
+    {
+      "type": "text",
+      "id": "sort_newest_label",
+      "label": "Newest sort label",
+      "default": "Newest"
+    },
+    {
+      "type": "text",
+      "id": "empty_heading",
+      "label": "Empty results heading",
+      "default": "No products found"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty results text",
+      "default": "Try removing a filter or choosing a different sort option."
+    },
+    {
+      "type": "text",
+      "id": "loading_text",
+      "label": "Loading status text",
+      "default": "Loading products"
+    },
+    {
+      "type": "text",
+      "id": "updated_text",
+      "label": "Updated status text",
+      "default": "Products updated"
+    },
+    {
+      "type": "text",
+      "id": "error_text",
+      "label": "Error status text",
+      "default": "Unable to update products. Please try again."
     },
     {
       "type": "range",
@@ -404,6 +559,16 @@
           "label": "Bulk"
         }
       ]
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Space above section",
+      "default": 20
     },
     {
       "type": "range",

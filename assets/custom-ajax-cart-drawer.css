@@ -16,8 +16,13 @@ custom-cart-drawer.is-open {
   position: fixed;
   inset: 0;
   z-index: 0;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
   background: rgba(var(--color-foreground), 0.48);
   opacity: 0;
+  cursor: pointer;
   transition: opacity var(--duration-default) ease;
 }
 

@@ -1453,6 +1453,94 @@
         "id": "cart_color_scheme",
         "label": "t:sections.all.colors.label",
         "default": "scheme-1"
+      },
+      {
+        "type": "header",
+        "content": "Custom AJAX cart drawer"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_heading",
+        "label": "Heading",
+        "default": "Cart"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_view_cart_label",
+        "label": "View cart button label",
+        "default": "View cart"
+      },
+      {
+        "type": "checkbox",
+        "id": "custom_cart_drawer_show_view_cart",
+        "label": "Show view cart button",
+        "default": true
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_item_singular",
+        "label": "Item count singular label",
+        "default": "item"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_item_plural",
+        "label": "Item count plural label",
+        "default": "items"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_remove_label",
+        "label": "Remove item button label",
+        "default": "Remove"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_decrease_label",
+        "label": "Decrease quantity accessible label",
+        "default": "Decrease quantity"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_increase_label",
+        "label": "Increase quantity accessible label",
+        "default": "Increase quantity"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_quantity_label",
+        "label": "Quantity input accessible label",
+        "default": "Quantity"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_loading_text",
+        "label": "Loading status text",
+        "default": "Loading cart"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_update_text",
+        "label": "Updating status text",
+        "default": "Updating quantity"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_remove_text",
+        "label": "Removing status text",
+        "default": "Removing item"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_updated_text",
+        "label": "Updated status text",
+        "default": "Cart updated"
+      },
+      {
+        "type": "text",
+        "id": "custom_cart_drawer_removed_text",
+        "label": "Removed status text",
+        "default": "Item removed"
       }
     ]
   }

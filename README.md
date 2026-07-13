@@ -1,9 +1,9 @@
 # Shopify Theme Developer Assignment
 
-This repo uses Shopify Dawn as the Online Store 2.0 base theme and adds the two requested assignment features:
+This repo uses Shopify Dawn as the Online Store 2.0 base theme and adds:
 
-- Task 1: a reusable, configurable AJAX filterable collection section.
-- Task 2: an AJAX cart drawer that opens after add-to-cart and supports live quantity/removal updates.
+- A reusable AJAX filterable collection section.
+- A custom AJAX cart drawer selectable from the Cart settings in the theme customizer.
 
 ## Preview
 
@@ -13,55 +13,61 @@ This repo uses Shopify Dawn as the Online Store 2.0 base theme and adds the two 
    shopify auth login
    ```
 
-2. Start the theme preview against the development store:
+2. Start the theme preview:
 
    ```bash
    shopify theme dev --store jaypatel9076.myshopify.com
    ```
 
-3. Open a collection page. The default collection template uses the new `filterable-collection` section.
+3. In the theme customizer, set **Theme settings > Cart > Type** to **Custom AJAX drawer**.
 
-## Task 1: Filterable Collection
+4. Preview the homepage or a collection page. The `filterable-collection` section is included on both the homepage and collection template.
 
-The custom section lives in:
+## Filterable Collection
+
+Files:
 
 - `sections/filterable-collection.liquid`
 - `assets/filterable-collection.js`
 - `assets/section-filterable-collection.css`
 
-The section supports:
+The section is built as an Online Store 2.0 section with schema settings for collection source, heading, labels, filters, sorting, quick add, product card display, columns, color scheme, and spacing.
 
-- Theme editor tag-group blocks with comma-separated tag values.
-- Configurable heading, products per page, desktop/mobile columns, image settings, and quick add.
-- Tag filtering using Shopify collection tag URLs fetched through section rendering.
-- Sorting by featured, price low-high, price high-low, and newest.
-- AJAX updates with `section_id`, so the page does not reload.
-- Query params for shareable state: `filter_tags` and `sort_by`.
-- Accessible grouped controls, live status updates, keyboard-friendly inputs, lazy product images, and empty/loading states.
+Filtering is dynamic and based on Shopify product data/filter values instead of hard-coded section blocks. The filter values are driven through product setup/metafields and product tags, so the merchant does not need to add the same filter values manually in every page instance of the section. Once the product metafield/tag data is configured, the filterable section can be reused on the homepage, collection page, or other templates without duplicating filter configuration in the customizer.
 
-The default `templates/collection.json` includes two starter tag groups: Color and Size. These can be edited or replaced in the theme editor to match the store's real product tags.
+## Custom AJAX Cart Drawer
 
-## Task 2: AJAX Cart Drawer
+Files:
 
-Dawn already ships a strong cart drawer foundation, so this implementation keeps the theme idiomatic and uses Dawn's existing cart drawer components:
+- `snippets/custom-ajax-cart-drawer.liquid`
+- `assets/custom-ajax-cart-drawer.js`
+- `assets/custom-ajax-cart-drawer.css`
 
-- `snippets/cart-drawer.liquid`
-- `sections/cart-drawer.liquid`
-- `assets/cart-drawer.js`
-- `assets/cart.js`
-- `assets/product-form.js`
+The custom drawer is separate from Dawn's default cart drawer. Dawn's drawer files remain available, and the new drawer is selected through the existing Cart type setting with a new **Custom AJAX drawer** option.
 
-The theme setting in `config/settings_data.json` is set to `cart_type: "drawer"`. Product forms submit with Ajax to `/cart/add.js`, request the cart drawer and cart bubble sections, render the updated drawer, and open it automatically. Quantity changes and removals use `/cart/change.js` and update drawer totals without a page reload.
+The drawer:
+
+- Opens after add-to-cart without a full page reload.
+- Uses Shopify Ajax Cart APIs such as `/cart.js`, `/cart/add.js`, and `/cart/change.js`.
+- Shows product image, title, variant, price, quantity controls, remove action, and live total.
+- Closes with the close button, Escape key, or outside click.
+- Updates the cart bubble and drawer contents live.
 
 ## Key Decisions
 
-- I used Dawn as the base to stay close to Shopify's current OS 2.0 conventions.
-- I built Task 1 as a separate section instead of modifying Dawn's built-in collection grid, so it remains reusable and easy to add/remove in the theme editor.
-- I reused Dawn's cart drawer for Task 2 because it is already accessible, section-rendered, and aligned with Shopify's Ajax cart API.
-- Tag filtering uses Shopify's native collection tag route for correct server-side product results, while query params mirror state for sharing and hydration.
+- Kept both features as isolated theme components instead of editing Dawn's main collection grid or default cart drawer.
+- Used OS 2.0 schema settings for merchant-controlled labels, layout, quick add, color scheme, and drawer copy.
+- Used Shopify's server-rendered product cards for the filterable collection so image loading, quick add, prices, and responsive card behavior stay close to Dawn conventions.
+- Made the custom cart drawer its own web component so it can work independently from Dawn's drawer implementation while still integrating with Dawn product forms.
+- Removed the old duplicate customizer filter setup by relying on product metafield/tag data as the source of truth.
 
 ## Trade-offs
 
-- The starter tag groups are examples. A merchant should update them to match real product tags in the store.
-- Shopify's native tag filtering is path-based, so the implementation keeps the tag path and query params in sync rather than relying only on query params.
-- With more time, I would add dedicated automated storefront tests for filter/sort combinations and cart drawer flows against a seeded development store.
+- Homepage native filters require fetching the selected collection route because Shopify only exposes some filter data on collection URLs.
+- The custom drawer formats prices client-side with `Intl.NumberFormat`; for complex multi-currency formatting, a server-rendered price fragment could be more exact.
+- Quick add for multi-variant products still uses Dawn's quick-add modal flow.
+
+## Improvements With More Time
+
+- Add richer handling for line item properties, selling plans, discounts, and unit prices in the custom drawer.
+- Move more text to locale files for full translation coverage instead of only schema/customizer settings.

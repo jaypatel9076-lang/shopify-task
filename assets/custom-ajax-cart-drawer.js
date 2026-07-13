@@ -108,9 +108,9 @@ class CustomCartDrawer extends HTMLElement {
     this.changeLine(button.dataset.key, nextQuantity, button);
   }
 
-  open(triggeredBy) {
+  open(triggeredBy, { refresh = true } = {}) {
     if (triggeredBy) this.setActiveElement(triggeredBy);
-    this.refresh();
+    if (refresh) this.refresh();
     this.classList.add('is-open');
     document.body.classList.add('overflow-hidden');
 
@@ -142,7 +142,7 @@ class CustomCartDrawer extends HTMLElement {
 
   renderContents(parsedState) {
     this.updateCartIconFromSections(parsedState?.sections);
-    this.refresh().then(() => this.open());
+    this.refresh().then(() => this.open(null, { refresh: false }));
   }
 
   async addFormToCart(form) {
@@ -180,6 +180,7 @@ class CustomCartDrawer extends HTMLElement {
     this.isRendering = true;
     this.setLoading(true);
     this.setError('');
+    this.setStatus(this.strings.loadingText);
 
     try {
       const response = await fetch(`${this.dataset.cartUrl}.js`, { headers: { Accept: 'application/json' } });
@@ -199,7 +200,7 @@ class CustomCartDrawer extends HTMLElement {
   async changeLine(key, quantity, sourceElement) {
     this.setError('');
     this.setLineLoading(key, true);
-    this.setStatus(quantity === 0 ? 'Removing item' : 'Updating quantity');
+    this.setStatus(quantity === 0 ? this.strings.removeText : this.strings.updateText);
 
     try {
       const response = await fetch(this.dataset.cartChangeUrl, {
@@ -213,7 +214,7 @@ class CustomCartDrawer extends HTMLElement {
       this.renderCart();
       this.updateCartIcon();
       this.publishCartUpdate(cart);
-      this.setStatus(quantity === 0 ? 'Item removed' : 'Cart updated');
+      this.setStatus(quantity === 0 ? this.strings.removedText : this.strings.updatedText);
       this.restoreFocus(sourceElement, key);
     } catch (error) {
       console.error(error);
@@ -228,7 +229,9 @@ class CustomCartDrawer extends HTMLElement {
     if (!this.cart) return;
 
     this.classList.toggle('is-empty', this.cart.item_count === 0);
-    this.querySelector('[data-custom-cart-count]').textContent = `${this.cart.item_count} ${this.cart.item_count === 1 ? 'item' : 'items'}`;
+    this.querySelector('[data-custom-cart-count]').textContent = `${this.cart.item_count} ${
+      this.cart.item_count === 1 ? this.strings.itemSingular : this.strings.itemPlural
+    }`;
     this.querySelector('[data-custom-cart-total]').textContent = this.formatMoney(this.cart.total_price);
     this.querySelector('[data-custom-cart-empty]').hidden = this.cart.item_count !== 0;
     this.querySelector('[data-custom-cart-footer]').hidden = this.cart.item_count === 0;
@@ -241,7 +244,11 @@ class CustomCartDrawer extends HTMLElement {
     const variantTitle = item.variant_title && item.variant_title !== 'Default Title' ? item.variant_title : '';
 
     return `
-      <article class="custom-cart-item" data-custom-cart-line="${this.escapeAttribute(item.key)}">
+      <article
+        class="custom-cart-item"
+        aria-label="${this.escapeAttribute(item.product_title)}"
+        data-custom-cart-line="${this.escapeAttribute(item.key)}"
+      >
         <a class="custom-cart-item__media" href="${this.escapeAttribute(item.url)}" tabindex="-1" aria-hidden="true">
           ${image ? `<img src="${this.escapeAttribute(image)}&width=180" alt="${this.escapeAttribute(item.featured_image?.alt || item.product_title)}" loading="lazy" width="90" height="90">` : ''}
         </a>
@@ -250,12 +257,20 @@ class CustomCartDrawer extends HTMLElement {
           ${variantTitle ? `<p class="custom-cart-item__variant">${this.escapeHtml(variantTitle)}</p>` : ''}
           <p class="custom-cart-item__price">${this.formatMoney(item.final_line_price ?? item.line_price)}</p>
           <div class="custom-cart-item__actions">
-            <div class="custom-cart-quantity" aria-label="Quantity for ${this.escapeAttribute(item.product_title)}">
-              <button type="button" class="custom-cart-quantity__button" data-custom-cart-quantity-button data-key="${this.escapeAttribute(item.key)}" data-delta="-1" aria-label="Decrease quantity">-</button>
-              <input class="custom-cart-quantity__input" type="number" min="0" value="${item.quantity}" data-custom-cart-quantity-input data-key="${this.escapeAttribute(item.key)}" aria-label="Quantity">
-              <button type="button" class="custom-cart-quantity__button" data-custom-cart-quantity-button data-key="${this.escapeAttribute(item.key)}" data-delta="1" aria-label="Increase quantity">+</button>
+            <div class="custom-cart-quantity" aria-label="${this.escapeAttribute(this.strings.quantityLabel)}">
+              <button type="button" class="custom-cart-quantity__button" data-custom-cart-quantity-button data-key="${this.escapeAttribute(item.key)}" data-delta="-1" aria-label="${this.escapeAttribute(this.strings.decreaseLabel)}: ${this.escapeAttribute(item.product_title)}">-</button>
+              <input class="custom-cart-quantity__input" type="number" min="0" value="${item.quantity}" data-custom-cart-quantity-input data-key="${this.escapeAttribute(item.key)}" aria-label="${this.escapeAttribute(this.strings.quantityLabel)}: ${this.escapeAttribute(item.product_title)}">
+              <button type="button" class="custom-cart-quantity__button" data-custom-cart-quantity-button data-key="${this.escapeAttribute(item.key)}" data-delta="1" aria-label="${this.escapeAttribute(this.strings.increaseLabel)}: ${this.escapeAttribute(item.product_title)}">+</button>
             </div>
-            <button type="button" class="custom-cart-item__remove link underlined-link" data-custom-cart-remove data-key="${this.escapeAttribute(item.key)}">Remove</button>
+            <button
+              type="button"
+              class="custom-cart-item__remove link underlined-link"
+              data-custom-cart-remove
+              data-key="${this.escapeAttribute(item.key)}"
+              aria-label="${this.escapeAttribute(this.strings.removeLabel)}: ${this.escapeAttribute(item.product_title)}"
+            >
+              ${this.escapeHtml(this.strings.removeLabel)}
+            </button>
           </div>
           <span class="custom-cart-item__loader" data-custom-cart-line-loader data-key="${this.escapeAttribute(item.key)}" hidden>
             <span class="loading__spinner"></span>
@@ -345,6 +360,22 @@ class CustomCartDrawer extends HTMLElement {
 
   escapeAttribute(value = '') {
     return this.escapeHtml(value);
+  }
+
+  get strings() {
+    return {
+      itemSingular: this.dataset.itemSingular || 'item',
+      itemPlural: this.dataset.itemPlural || 'items',
+      removeLabel: this.dataset.removeLabel || 'Remove',
+      decreaseLabel: this.dataset.decreaseLabel || 'Decrease quantity',
+      increaseLabel: this.dataset.increaseLabel || 'Increase quantity',
+      quantityLabel: this.dataset.quantityLabel || 'Quantity',
+      loadingText: this.dataset.loadingText || 'Loading cart',
+      updateText: this.dataset.updateText || 'Updating quantity',
+      removeText: this.dataset.removeText || 'Removing item',
+      updatedText: this.dataset.updatedText || 'Cart updated',
+      removedText: this.dataset.removedText || 'Item removed',
+    };
   }
 }
 
