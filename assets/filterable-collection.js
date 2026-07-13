@@ -16,7 +16,8 @@ class FilterableCollection extends HTMLElement {
       this.clearFilters();
     });
     window.addEventListener('popstate', this.onPopState);
-    this.hydrateFromQueryParams();
+    const hydrated = this.hydrateFromQueryParams();
+    if (hydrated.hasFilterState) this.render({ updateHistory: false });
   }
 
   disconnectedCallback() {
@@ -50,6 +51,10 @@ class FilterableCollection extends HTMLElement {
     if (sortSelect && sortBy && [...sortSelect.options].some((option) => option.value === sortBy)) {
       sortSelect.value = sortBy;
     }
+
+    return {
+      hasFilterState: selectedTags.length > 0 || Boolean(sortBy),
+    };
   }
 
   clearFilters() {
@@ -69,11 +74,17 @@ class FilterableCollection extends HTMLElement {
     return this.querySelector('[name="sort_by"]')?.value || '';
   }
 
-  buildUrl({ includeSectionId = true } = {}) {
+  buildFetchUrl() {
     const basePath = this.dataset.collectionUrl || window.location.pathname;
     const tagPath = this.selectedTags.length ? `/${this.selectedTags.map(encodeURIComponent).join('+')}` : '';
     const url = new URL(`${basePath}${tagPath}`, window.location.origin);
-    if (includeSectionId) url.searchParams.set('section_id', this.dataset.sectionId);
+    url.searchParams.set('section_id', this.dataset.sectionId);
+    if (this.sortBy) url.searchParams.set('sort_by', this.sortBy);
+    return url;
+  }
+
+  buildShareUrl() {
+    const url = new URL(this.dataset.collectionUrl || window.location.pathname, window.location.origin);
     if (this.sortBy) url.searchParams.set('sort_by', this.sortBy);
     if (this.selectedTags.length) url.searchParams.set('filter_tags', this.selectedTags.join(','));
     return url;
@@ -86,7 +97,7 @@ class FilterableCollection extends HTMLElement {
     this.setStatus('Loading products');
 
     try {
-      const response = await fetch(this.buildUrl().toString(), { signal: this.abortController.signal });
+      const response = await fetch(this.buildFetchUrl().toString(), { signal: this.abortController.signal });
       if (!response.ok) throw new Error(`Section request failed with ${response.status}`);
       const text = await response.text();
       const html = new DOMParser().parseFromString(text, 'text/html');
@@ -99,7 +110,7 @@ class FilterableCollection extends HTMLElement {
         nextSection.querySelector('[data-filterable-count]').innerHTML;
 
       if (updateHistory) {
-        const nextUrl = this.buildUrl({ includeSectionId: false });
+        const nextUrl = this.buildShareUrl();
         window.history.pushState({}, '', nextUrl.toString());
       }
 
