@@ -7,7 +7,7 @@
  * in-theme version so forks that change Dawn's cart contract keep
  * working. Remove this file and the built-in defaults take over.
  *
- *   - openCart   — opens <cart-drawer>; falls back to /cart.
+ *   - openCart   — opens <custom-cart-drawer> or <cart-drawer>; falls back to /cart.
  *   - updateCart — after the Storefront API mutation, refreshes the
  *     affected cart sections and publishes `cart-update` so Dawn's
  *     pubsub subscribers react.
@@ -16,7 +16,7 @@
 
 // Cart custom elements that advertise sections via getSectionsToRender().
 // If Dawn adds a new cart custom element, add its tag here.
-const DAWN_CART_TAGS = ['cart-drawer', 'cart-items', 'cart-drawer-items', 'cart-notification'];
+const DAWN_CART_TAGS = ['custom-cart-drawer', 'cart-drawer', 'cart-items', 'cart-drawer-items', 'cart-notification'];
 
 // Sections that Dawn's own pubsub subscribers refresh (cart.js's
 // CartItems#onCartUpdate fetches and replaces these directly when
@@ -121,7 +121,7 @@ function initStandardActions() {
 
   actions.openCart.configure({
     async handler(defaultHandler) {
-      const drawer = document.querySelector('cart-drawer');
+      const drawer = document.querySelector('custom-cart-drawer') || document.querySelector('cart-drawer');
       if (drawer && typeof drawer.open === 'function') {
         drawer.open();
         return;

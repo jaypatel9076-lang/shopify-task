@@ -1,0 +1,69 @@
+{% comment %}
+  Custom AJAX cart drawer. This does not use Dawn's cart drawer markup.
+
+  Usage:
+  {% render 'custom-ajax-cart-drawer' %}
+{% endcomment %}
+
+<custom-cart-drawer
+  class="custom-cart-drawer{% if cart == empty %} is-empty{% endif %}"
+  data-cart-url="{{ routes.cart_url }}"
+  data-cart-change-url="{{ routes.cart_change_url }}"
+  data-cart-update-url="{{ routes.cart_update_url }}"
+>
+  <div class="custom-cart-drawer__overlay" data-custom-cart-close></div>
+
+  <aside
+    id="CustomCartDrawer"
+    class="custom-cart-drawer__panel gradient color-{{ settings.cart_color_scheme }}"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="CustomCartDrawerTitle"
+    tabindex="-1"
+  >
+    <header class="custom-cart-drawer__header">
+      <div>
+        <h2 id="CustomCartDrawerTitle" class="custom-cart-drawer__title">{{ 'sections.cart.title' | t }}</h2>
+        <p class="custom-cart-drawer__count" data-custom-cart-count>
+          {{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %}
+        </p>
+      </div>
+      <button class="custom-cart-drawer__close" type="button" data-custom-cart-close aria-label="{{ 'accessibility.close' | t }}">
+        <span class="svg-wrapper">{{- 'icon-close.svg' | inline_asset_content -}}</span>
+      </button>
+    </header>
+
+    <div class="custom-cart-drawer__body">
+      <div class="custom-cart-drawer__loading" data-custom-cart-loading hidden>
+        {%- render 'loading-spinner' -%}
+      </div>
+      <div class="custom-cart-drawer__items" data-custom-cart-items></div>
+      <div class="custom-cart-drawer__empty" data-custom-cart-empty hidden>
+        <h3 class="cart__empty-text">{{ 'sections.cart.empty' | t }}</h3>
+        <a href="{{ routes.all_products_collection_url }}" class="button">{{ 'general.continue_shopping' | t }}</a>
+      </div>
+    </div>
+
+    <p class="visually-hidden" role="status" aria-live="polite" data-custom-cart-status></p>
+    <div class="custom-cart-drawer__error" role="alert" data-custom-cart-error></div>
+
+    <footer class="custom-cart-drawer__footer" data-custom-cart-footer>
+      <div class="custom-cart-drawer__totals" role="status">
+        <h3>{{ 'sections.cart.estimated_total' | t }}</h3>
+        <p data-custom-cart-total>{{ cart.total_price | money_with_currency }}</p>
+      </div>
+      <small class="tax-note caption-large rte">
+        {{ 'sections.cart.taxes_at_checkout_shipping_at_checkout_without_policy' | t }}
+      </small>
+
+      <div class="custom-cart-drawer__ctas">
+        <a class="button button--secondary" href="{{ routes.cart_url }}">View cart</a>
+        <form action="{{ routes.cart_url }}" method="post">
+          <button class="button" name="checkout" type="submit" data-custom-cart-checkout {% if cart == empty %}disabled{% endif %}>
+            {{ 'sections.cart.checkout' | t }}
+          </button>
+        </form>
+      </div>
+    </footer>
+  </aside>
+</custom-cart-drawer>

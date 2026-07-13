@@ -287,6 +287,10 @@
       {{ 'component-totals.css' | asset_url | stylesheet_tag }}
       {{ 'component-price.css' | asset_url | stylesheet_tag }}
       {{ 'component-discounts.css' | asset_url | stylesheet_tag }}
+    {%- elsif settings.cart_type == 'custom_ajax_drawer' -%}
+      {{ 'custom-ajax-cart-drawer.css' | asset_url | stylesheet_tag }}
+      {{ 'component-cart.css' | asset_url | stylesheet_tag }}
+      {{ 'component-totals.css' | asset_url | stylesheet_tag }}
     {%- endif -%}
 
     {%- unless settings.type_body_font.system? -%}
@@ -328,6 +332,8 @@
 
     {%- if settings.cart_type == 'drawer' -%}
       {%- render 'cart-drawer' -%}
+    {%- elsif settings.cart_type == 'custom_ajax_drawer' -%}
+      {%- render 'custom-ajax-cart-drawer' -%}
     {%- endif -%}
 
     {% sections 'header-group' %}
@@ -400,6 +406,8 @@
 
     {%- if settings.cart_type == 'drawer' -%}
       <script src="{{ 'cart-drawer.js' | asset_url }}" defer="defer"></script>
+    {%- elsif settings.cart_type == 'custom_ajax_drawer' -%}
+      <script src="{{ 'custom-ajax-cart-drawer.js' | asset_url }}" defer="defer"></script>
     {%- endif -%}
   </body>
 </html>

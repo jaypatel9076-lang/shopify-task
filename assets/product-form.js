@@ -8,11 +8,12 @@ if (!customElements.get('product-form')) {
         this.form = this.querySelector('form');
         this.variantIdInput.disabled = false;
         this.form.addEventListener('submit', this.onSubmitHandler.bind(this));
-        this.cart = document.querySelector('cart-notification') || document.querySelector('cart-drawer');
+        this.cart = this.getCartTarget();
         this.submitButton = this.querySelector('[type="submit"]');
         this.submitButtonText = this.submitButton.querySelector('span');
 
-        if (document.querySelector('cart-drawer')) this.submitButton.setAttribute('aria-haspopup', 'dialog');
+        if (document.querySelector('cart-drawer') || document.querySelector('custom-cart-drawer'))
+          this.submitButton.setAttribute('aria-haspopup', 'dialog');
 
         this.hideErrors = this.dataset.hideErrors === 'true';
       }
@@ -31,14 +32,17 @@ if (!customElements.get('product-form')) {
         config.headers['X-Requested-With'] = 'XMLHttpRequest';
         delete config.headers['Content-Type'];
 
+        const cart = this.getCartTarget();
+        this.cart = cart;
+
         const formData = new FormData(this.form);
-        if (this.cart) {
+        if (cart) {
           formData.append(
             'sections',
-            this.cart.getSectionsToRender().map((section) => section.id)
+            cart.getSectionsToRender().map((section) => section.id)
           );
           formData.append('sections_url', window.location.pathname);
-          this.cart.setActiveElement(document.activeElement);
+          cart.setActiveElement(document.activeElement);
         }
         config.body = formData;
 
@@ -67,7 +71,7 @@ if (!customElements.get('product-form')) {
               soldOutMessage.classList.remove('hidden');
               this.error = true;
               return;
-            } else if (!this.cart) {
+            } else if (!cart) {
               this.resolveCartLinesUpdate(linesUpdateDeferred);
               window.location = window.routes.cart_url;
               return;
@@ -186,6 +190,14 @@ if (!customElements.get('product-form')) {
 
       get variantIdInput() {
         return this.form.querySelector('[name=id]');
+      }
+
+      getCartTarget() {
+        return (
+          document.querySelector('cart-notification') ||
+          document.querySelector('custom-cart-drawer') ||
+          document.querySelector('cart-drawer')
+        );
       }
     }
   );
