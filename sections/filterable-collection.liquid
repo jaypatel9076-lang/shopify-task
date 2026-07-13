@@ -35,97 +35,154 @@
 {%- endstyle -%}
 
 {%- liquid
-  assign sort_by = collection.sort_by | default: collection.default_sort_by
-  assign active_tag_handles = ''
-  for tag in current_tags
-    assign active_tag_handles = active_tag_handles | append: tag | handleize | append: ','
+  assign target_collection = collection
+  if target_collection == blank and section.settings.collection != blank
+    assign target_collection = section.settings.collection
+  endif
+  if target_collection == blank
+    assign target_collection = collections.all
+  endif
+
+  assign sort_by = target_collection.sort_by | default: target_collection.default_sort_by
+  assign section_url = request.path
+  if collection != blank
+    assign section_url = target_collection.url
+  endif
+  assign is_collection_template = false
+  if collection != blank
+    assign is_collection_template = true
+  endif
+  assign native_filter_count = 0
+  for filter in target_collection.filters
+    if filter.type == 'list' or filter.type == 'boolean'
+      assign native_filter_count = native_filter_count | plus: 1
+    endif
   endfor
 -%}
 
 <filterable-collection
   class="filterable-collection section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}"
   data-section-id="{{ section.id }}"
-  data-collection-url="{{ collection.url }}"
+  data-collection-url="{{ target_collection.url }}"
+  data-section-url="{{ section_url }}"
+  data-share-url="{{ section_url }}"
+  data-filter-source="native"
+  data-collection-template="{{ is_collection_template }}"
 >
-  {%- paginate collection.products by section.settings.products_per_page -%}
+  {%- paginate target_collection.products by section.settings.products_per_page -%}
     <div class="page-width">
       <form class="filterable-collection__controls" data-filterable-form>
         <div class="filterable-collection__header">
           <div>
             <h2 class="filterable-collection__heading {{ section.settings.heading_size }}">
-              {{ section.settings.heading | default: collection.title | escape }}
+              {{ section.settings.heading | default: target_collection.title | escape }}
             </h2>
             <p class="filterable-collection__summary caption-large" data-filterable-count>
-              {{ collection.products_count }} products
+              {{ target_collection.products_count }} products
             </p>
           </div>
           <button type="button" class="link underlined-link" data-filterable-clear>Clear filters</button>
         </div>
 
-        {%- if section.blocks.size > 0 -%}
+        {%- if section.settings.show_filters and native_filter_count > 0 -%}
           <div class="filterable-collection__groups">
-            {%- for block in section.blocks -%}
-              {%- liquid
-                assign configured_tags = block.settings.tags | split: ','
-              -%}
-              <fieldset class="filterable-collection__fieldset" {{ block.shopify_attributes }}>
-                <legend class="filterable-collection__legend">{{ block.settings.label | escape }}</legend>
-                <div class="filterable-collection__tag-list">
-                  {%- for configured_tag in configured_tags -%}
-                    {%- liquid
-                      assign tag_label = configured_tag | strip
-                      assign tag_value = tag_label | handleize
-                      assign active_token = tag_value | append: ','
-                    -%}
-                    {%- if tag_label != blank -%}
+            {%- for filter in target_collection.filters -%}
+              {%- if filter.type == 'list' or filter.type == 'boolean' -%}
+                <fieldset class="filterable-collection__fieldset">
+                  <legend class="filterable-collection__legend">{{ filter.label | escape }}</legend>
+                  <div class="filterable-collection__tag-list">
+                    {%- for value in filter.values -%}
                       <label class="filterable-collection__tag">
                         <input
                           type="checkbox"
-                          value="{{ tag_value }}"
-                          data-filter-tag
-                          {% if active_tag_handles contains active_token %}
+                          name="{{ filter.param_name }}"
+                          value="{{ value.value }}"
+                          data-native-filter
+                          {% if value.active %}
                             checked
                           {% endif %}
+                          {% if value.count == 0 and value.active == false %}
+                            disabled
+                          {% endif %}
                         >
-                        <span class="filterable-collection__tag-label">{{ tag_label | escape }}</span>
+                        <span class="filterable-collection__tag-label">
+                          {{ value.label | escape }}
+                          {%- if section.settings.show_filter_counts -%}
+                            ({{ value.count }})
+                          {%- endif -%}
+                        </span>
                       </label>
-                    {%- endif -%}
-                  {%- endfor -%}
-                </div>
-              </fieldset>
+                    {%- endfor -%}
+                  </div>
+                </fieldset>
+              {%- endif -%}
             {%- endfor -%}
           </div>
+        {%- elsif section.settings.show_filters and is_collection_template == false and target_collection.url != blank -%}
+          <div class="filterable-collection__groups" data-filterable-groups></div>
+        {%- elsif section.settings.show_filters -%}
+          <p class="filterable-collection__status caption-large">
+            Add product values and enable filters in Shopify Search & Discovery to show dynamic filters here.
+          </p>
         {%- endif -%}
 
-        <div class="filterable-collection__sort">
-          <label class="filterable-collection__sort-label" for="FilterableSort-{{ section.id }}">Sort by</label>
-          <div class="select">
-            <select
-              id="FilterableSort-{{ section.id }}"
-              class="select__select"
-              name="sort_by"
-              data-default-sort="{{ collection.default_sort_by }}"
-            >
-              <option value="manual" {% if sort_by == 'manual' %}selected{% endif %}>Featured</option>
-              <option value="price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price, low to high</option>
-              <option value="price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price, high to low</option>
-              <option value="created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
-            </select>
-            <span class="svg-wrapper">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+        {%- if section.settings.enable_sorting -%}
+          <div class="filterable-collection__sort">
+            <label class="filterable-collection__sort-label" for="FilterableSort-{{ section.id }}">Sort by</label>
+            <div class="select">
+              <select
+                id="FilterableSort-{{ section.id }}"
+                class="select__select"
+                name="sort_by"
+                data-default-sort="{{ target_collection.default_sort_by }}"
+              >
+                <option value="manual" {% if sort_by == 'manual' %}selected{% endif %}>Featured</option>
+                <option value="price-ascending" {% if sort_by == 'price-ascending' %}selected{% endif %}>Price, low to high</option>
+                <option value="price-descending" {% if sort_by == 'price-descending' %}selected{% endif %}>Price, high to low</option>
+                <option value="created-descending" {% if sort_by == 'created-descending' %}selected{% endif %}>Newest</option>
+              </select>
+              <span class="svg-wrapper">{{- 'icon-caret.svg' | inline_asset_content -}}</span>
+            </div>
           </div>
-        </div>
+        {%- endif -%}
 
         <div class="filterable-collection__actions">
           <p class="filterable-collection__status caption-large" role="status" aria-live="polite" data-filterable-status></p>
         </div>
       </form>
 
+      {%- if section.settings.show_active_filters -%}
+        <div class="active-filters" data-active-filters>
+          {%- for filter in target_collection.filters -%}
+            {%- for value in filter.active_values -%}
+              <a class="active-filter" href="{{ value.url_to_remove }}" data-filter-link>
+                {{ value.label | escape }} x
+              </a>
+            {%- endfor -%}
+          {%- endfor -%}
+
+          {%- if target_collection.filters != empty -%}
+            {%- assign has_active_filter = false -%}
+            {%- for filter in target_collection.filters -%}
+              {%- if filter.active_values.size > 0 -%}
+                {%- assign has_active_filter = true -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if has_active_filter -%}
+              <a class="active-filter clear-all" href="{{ section_url }}{% if sort_by != blank %}?sort_by={{ sort_by }}{% endif %}" data-filter-link>
+                Clear all
+              </a>
+            {%- endif -%}
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+
       <div class="filterable-collection__grid-wrap" data-filterable-results>
         <div class="filterable-collection__loading">
           {%- render 'loading-spinner' -%}
         </div>
 
-        {%- if collection.products.size == 0 -%}
+        {%- if target_collection.products.size == 0 -%}
           <div class="filterable-collection__empty">
             <h3 class="h2">No products found</h3>
             <p>Try removing a filter or choosing a different sort option.</p>
@@ -136,7 +193,7 @@
             data-id="{{ section.id }}"
             class="filterable-collection__grid grid product-grid grid--{{ section.settings.columns_mobile }}-col-tablet-down grid--{{ section.settings.columns_desktop }}-col-desktop"
           >
-            {%- for product in collection.products -%}
+            {%- for product in target_collection.products -%}
               {%- liquid
                 assign lazy_load = false
                 if forloop.index > 2
@@ -181,6 +238,12 @@
       "default": "Shop the collection"
     },
     {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection",
+      "info": "Required when this section is used outside a collection template, such as the homepage."
+    },
+    {
       "type": "select",
       "id": "heading_size",
       "label": "Heading size",
@@ -199,6 +262,30 @@
           "label": "Large"
         }
       ]
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "default": true,
+      "label": "Show Search & Discovery filters"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filter_counts",
+      "default": true,
+      "label": "Show filter counts"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_active_filters",
+      "default": true,
+      "label": "Show active filter pills"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "default": true,
+      "label": "Enable sorting"
     },
     {
       "type": "range",
@@ -339,42 +426,9 @@
       "default": 36
     }
   ],
-  "blocks": [
-    {
-      "type": "tag_group",
-      "name": "Tag group",
-      "settings": [
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Group label",
-          "default": "Color"
-        },
-        {
-          "type": "textarea",
-          "id": "tags",
-          "label": "Tags",
-          "default": "Black, White, Blue",
-          "info": "Comma-separated product tags. Values are matched by tag handle."
-        }
-      ]
-    }
-  ],
   "presets": [
     {
-      "name": "Filterable collection",
-      "blocks": [
-        {
-          "type": "tag_group"
-        },
-        {
-          "type": "tag_group",
-          "settings": {
-            "label": "Size",
-            "tags": "Small, Medium, Large"
-          }
-        }
-      ]
+      "name": "Filterable collection"
     }
   ]
 }

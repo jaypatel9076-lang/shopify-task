@@ -20,26 +20,6 @@
     },
     "product-grid": {
       "type": "filterable-collection",
-      "blocks": {
-        "color": {
-          "type": "tag_group",
-          "settings": {
-            "label": "Color",
-            "tags": "Black, White, Blue, Red"
-          }
-        },
-        "size": {
-          "type": "tag_group",
-          "settings": {
-            "label": "Size",
-            "tags": "Small, Medium, Large"
-          }
-        }
-      },
-      "block_order": [
-        "color",
-        "size"
-      ],
       "settings": {
         "heading": "Shop the collection",
         "heading_size": "h1",
